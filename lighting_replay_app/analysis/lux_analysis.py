@@ -6,9 +6,8 @@ from numpy.core.numeric import NaN
 from collections import deque
 from sklearn.preprocessing import StandardScaler
 
-from antevents.base import Publisher, Filter
-from antevents.internal import extensionmethod
-from antevents.sensor import SensorEvent
+from antevents.base import Publisher, Filter,\
+                           SensorEvent, filtermethod
 from antevents.linq.transducer import SensorSlidingMean
 
 from lux_time_utils import get_sunrise_sunset, time_of_day_to_zone,\
@@ -18,7 +17,7 @@ MAX_TIME_INTERVAL = 60*4
 EXPECTED_TIME_INTERVAL = 60
 
 
-@extensionmethod(Publisher)
+@filtermethod(Publisher)
 def fill_in_missing_times(this):
     def on_next(self, x):
         if (self.last_time is not None) and \
