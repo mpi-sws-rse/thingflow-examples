@@ -58,6 +58,9 @@ class SensorSlidingMeanPassNaNs(SensorSlidingMean):
             return SensorSlidingMean.step(self, event)
         
 class CaptureNaNIndexes:
+    """AntEvents subscriber that watches for values that are
+    NaN and tracks those indexes.
+    """
     def __init__(self):
         self.idx = 0
         self.nan_indexes = []
@@ -201,12 +204,46 @@ class ScanState:
         """
         pass
 
+class LengthHistogramState(ScanState):
+    """Build lists of on/off lengths that can be used to compute
+    histograms.
+    """
+    def __init__(self):
+        super().__init__()
+        self.on_lengths = [[] for i in range(NUM_ZONES)]
+        self.off_lengths = [[] for i in range(NUM_ZONES)]
+        self.obs_by_zone = [[] for z in range(NUM_ZONES)]
+
+    def record_on_sequence(self, start_zone, start_time, end_zone, length):
+        self.on_lengths[start_zone].append(length)
+
+    def record_off_sequence(self, start_zone, start_time, end_zone, length):
+        self.off_lengths[start_zone].append(length)
+
+    def record_event(self, s, dt, start_zone, current_zone, current_length, back_event):
+        self.obs_by_zone[current_zone].append(s)
+        
+def build_length_histogram_data(samples, timestamps):
+    """Given a series of samples and timestamps, find on and off
+    sequences and build lists of the sequence lengths per zone. A
+    'sequence' is a series of samples of the same value preceeded by at
+    last one sample of the opposite value (as oppposed to a break in the
+    readings). Returns a LengthHistogramState object containing on_lengths
+    and off_lengths members.
+    """
+    state = LengthHistogramState()
+    for (s, t) in zip(samples, timestamps):
+        state.add_sample(s, t)
+    for zone in range(NUM_ZONES):
+        state.on_lengths[zone].sort()
+        state.off_lengths[zone].sort()
+    return state
 
 class LightPredictionStates(ScanState):
     def __init__(self, trainer):
         super().__init__()
         self.trainer = trainer
-
+        
     def record_on_sequence(self, start_zone, start_time, end_zone, length):
         self.trainer.on_lengths[start_zone].append(length)
         self.trainer.on_lengths_with_start.append((dt_to_minutes(start_time), length),)
@@ -227,6 +264,9 @@ class LightPredictionStates(ScanState):
         
         
 class LightPredictionTrainer:
+    """This class preprocessed the data to create features for machine
+    learning.
+    """
     def __init__(self, feature_filter=lambda x: x):
         """The feature filter is a function that can remove elements from
         the feature tuple. By default the tuple is
