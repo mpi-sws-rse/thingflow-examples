@@ -90,11 +90,66 @@ class CaptureNaNIndexes:
                 result.append(val)
         return result
     
-                            
+
+class HmmScanner:
+    """Scan through a set of samples in sequential order and
+    build up sequences for each time zone that can be passed to
+    the HMM learn. For each zone, we need to pass the fit() method
+    the concatenated sequence of samples and the lengths of each
+    subsequence. We break the samples into multiple subsequences
+    whenever we encounter a time gap (as indicated via a NaN value)
+    or when we cross between zones.
+    """
+    def __init__(self):
+        self.length = None
+        self.zone = None
+        self.samples_by_zone = [[] for zone in range(NUM_ZONES)]
+        self.lengths_by_zone = [[] for zone in range(NUM_ZONES)]
+
+    def _start_sequence(self, zone, s):
+        self.length = 1
+        self.zone = zone
+        self.samples_by_zone[zone].append(s)
+        
+    def _complete_sequence(self):
+        if self.length is not None:
+            assert self.zone is not None
+            self.lengths_by_zone[self.zone].append(self.length)
+        self.zone = None
+        self.length = None
+        
+    def process_samples(self, samples, timestamps):
+        for (s, t) in zip(samples, timestamps):
+            s = int(s) if not math.isnan(s) else NaN
+            (sunrise, sunset) = get_sunrise_sunset(t.month, t.day)
+            current_zone = time_of_day_to_zone(dt_to_minutes(t), sunrise,
+                                               sunset)
+            if self.length is None:
+                if math.isnan(s):
+                    continue
+                else:
+                    self._start_sequence(current_zone, s)
+            elif math.isnan(s):
+                self._complete_sequence()
+            elif self.zone != current_zone:
+                self._complete_sequence()
+                self._start_sequence(current_zone, s)
+            else: # just extend the current sequence
+                self.length += 1
+                self.samples_by_zone[self.zone].append(s)
+        # see if there was an in-progress sequence for which we need to add
+        # the length
+        self._complete_sequence()
+        # sanity check
+        for zone in range(NUM_ZONES):
+            assert sum(self.lengths_by_zone[zone])==len(self.samples_by_zone[zone])
+
 
 BACKCHECK_LENGTH = 10
 
 class ScanState:
+    """A state machine for finding sequences of on or off samples
+    """
     WAITING_FOR_TRANSITION = 0
     RECORDING_LENGTH = 1
     NAN_STATE = 2
@@ -108,6 +163,9 @@ class ScanState:
         self.prev_zone = None
         self.length = None
         self.recorded_events = None
+        # The backcheck queue maintains a queue of older samples.
+        # This is used to include the sample which is BACKCHECK_LENGTH
+        # samples back, which is helpful for some machine learning algorihms.
         self.backcheck_queue = []
 
     def add_sample(self, s, t):
@@ -212,16 +270,12 @@ class LengthHistogramState(ScanState):
         super().__init__()
         self.on_lengths = [[] for i in range(NUM_ZONES)]
         self.off_lengths = [[] for i in range(NUM_ZONES)]
-        self.obs_by_zone = [[] for z in range(NUM_ZONES)]
 
     def record_on_sequence(self, start_zone, start_time, end_zone, length):
         self.on_lengths[start_zone].append(length)
 
     def record_off_sequence(self, start_zone, start_time, end_zone, length):
         self.off_lengths[start_zone].append(length)
-
-    def record_event(self, s, dt, start_zone, current_zone, current_length, back_event):
-        self.obs_by_zone[current_zone].append(s)
         
 def build_length_histogram_data(samples, timestamps):
     """Given a series of samples and timestamps, find on and off
