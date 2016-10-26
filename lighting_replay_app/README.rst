@@ -47,6 +47,6 @@ The ``player`` subdirectory contains a light controller application which
 runs off the Hidden Markov Models created in the analysis phase. It controls
 `Philips Hue <http://www.developers.meethue.com/>`__ smart
 lights, which are accessible via an REST api. We use the
-`phue https://pypi.python.org/pypi/phue/0.8>`__ library to abstract the
+`phue <https://pypi.python.org/pypi/phue/0.8>`__ library to abstract the
 details of the control protocol.
 
