@@ -4,15 +4,14 @@ import time
 import asyncio
 import sys
 
-from antevents.base import Publisher, Scheduler
-from antevents.sensor import SensorEvent
-import antevents.adapters.csv
-from antevents.adapters.csv import RollingCsvWriter
-import antevents.linq.output
-import antevents.linq.dispatch
-import antevents.linq.select
-import antevents.linq.json
-from antevents.adapters.mqtt import MQTTReader
+from thingflow.base import OutputThing, Scheduler, SensorEvent, SensorAsOutputThing
+import thingflow.adapters.csv
+from thingflow.adapters.csv import RollingCsvWriter
+import thingflow.filters.output
+import thingflow.filters.dispatch
+import thingflow.filters.select
+import thingflow.filters.json
+from thingflow.adapters.mqtt import MQTTReader
 
 if len(sys.argv)>1:
     DIRECTORY=sys.argv[1]
@@ -23,7 +22,7 @@ print("Using %s as directory for log files" % DIRECTORY)
 LOCAL_SENSOR_ID='dining-room'
 try:
     import tsl2591
-    from antevents.adapters.rpi.lux_sensor import LuxSensor    
+    from thingflow.sensors.rpi.lux_sensor import LuxSensor    
     HAS_LOCAL_SENSOR = True
 except ImportError:
     HAS_LOCAL_SENSOR = False
@@ -40,7 +39,7 @@ scheduler = Scheduler(asyncio.get_event_loop())
 
 
 if HAS_LOCAL_SENSOR:
-    sensor = LuxSensor(sensor_id=LOCAL_SENSOR_ID)
+    sensor = SensorAsOutputThing(LuxSensor(sensor_id=LOCAL_SENSOR_ID))
     sensor.rolling_csv_writer(DIRECTORY, LOCAL_SENSOR_ID)
     sensor.output()
     scheduler.schedule_periodic_on_separate_thread(sensor, 60)
@@ -53,8 +52,8 @@ dispatcher = mqtt_reader.map(lambda m:(m.payload).decode("utf-8"))\
                         .dispatch(dispatch_rules)
 # For each remote sensor, we create a separate csv writer
 for remote in REMOTE_SENSORS:
-    dispatcher.rolling_csv_writer(DIRECTORY, remote, sub_topic=remote).output()
-dispatcher.subscribe(lambda x: print("Unexpected sensor %s, full event was %s" %
+    dispatcher.rolling_csv_writer(DIRECTORY, remote, sub_port=remote).output()
+dispatcher.connect(lambda x: print("Unexpected sensor %s, full event was %s" %
                                      (x.sensor_id, x)))
 #mqtt_reader.output()
 mqtt_reader.print_downstream()

@@ -5,10 +5,10 @@ import sys
 import asyncio
 import time
 
-from antevents.base import Scheduler, IterableAsPublisher
-from antevents.adapters.mqtt import MQTTWriter
-import antevents.linq.select
-import antevents.linq.json
+from thingflow.base import Scheduler, IterableAsOutputThing
+from thingflow.adapters.mqtt import MQTTWriter
+import thingflow.filters.select
+import thingflow.filters.json
 
 BROKER_HOST='127.0.0.1'
 SENSOR1_ID='front-room'
@@ -23,17 +23,17 @@ def event_generator(sensor_id, values):
         yield make_event(sensor_id, v)
 
 def setup():
-    lux1 = IterableAsPublisher(event_generator(SENSOR1_ID, [20, 20, 30, 40, 20]),
+    lux1 = IterableAsOutputThing(event_generator(SENSOR1_ID, [20, 20, 30, 40, 20]),
                                name=SENSOR1_ID)
     lux1.output()
     print("Initializing writer...")
     writer = MQTTWriter(BROKER_HOST, client_id=SENSOR1_ID, topics=[('remote-sensors', 0)])
     print("Writer connected")
-    lux1.to_json().subscribe(writer)
+    lux1.to_json().connect(writer)
     lux1.print_downstream()
-    lux2 = IterableAsPublisher(event_generator(SENSOR2_ID, [10, 10, 20, 10, 10]),
+    lux2 = IterableAsOutputThing(event_generator(SENSOR2_ID, [10, 10, 20, 10, 10]),
                                name=SENSOR2_ID)
-    lux2.to_json().subscribe(writer)
+    lux2.to_json().connect(writer)
     lux2.output()
     lux2.print_downstream()
     return lux1, lux2

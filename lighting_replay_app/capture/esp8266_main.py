@@ -1,7 +1,7 @@
 """This runs in Micropython on the esp8266. It samples the
 lux sensor and pushes to an mqtt queue.
 """
-from antevents import Scheduler 
+from thingflow import Scheduler 
 from tsl2591 import Tsl2591
 from mqtt_writer import MQTTWriter
 from wifi import wifi_connect
