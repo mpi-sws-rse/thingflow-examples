@@ -6,9 +6,9 @@ from numpy.core.numeric import NaN
 from collections import deque
 from sklearn.preprocessing import StandardScaler
 
-from antevents.base import Publisher, Filter,\
+from thingflow.base import OutputThing, FunctionFilter,\
                            SensorEvent, filtermethod
-from antevents.linq.transducer import SensorSlidingMean
+from thingflow.filters.transducer import SensorSlidingMean
 
 from lux_time_utils import get_sunrise_sunset, time_of_day_to_zone,\
     NUM_ZONES, dt_to_minutes, minutes_to_time
@@ -17,7 +17,7 @@ MAX_TIME_INTERVAL = 60*4
 EXPECTED_TIME_INTERVAL = 60
 
 
-@filtermethod(Publisher)
+@filtermethod(OutputThing)
 def fill_in_missing_times(this):
     def on_next(self, x):
         if (self.last_time is not None) and \
@@ -34,8 +34,8 @@ def fill_in_missing_times(this):
         self.last_time = x.ts
         self._dispatch_next(x)
     
-    f = Filter(this, on_next=on_next,
-               name="fill_in_missing_times()")
+    f = FunctionFilter(this, on_next=on_next,
+                       name="fill_in_missing_times()")
     setattr(f, 'last_time', None)
     return f
 
@@ -121,7 +121,7 @@ class HmmScanner:
     def process_samples(self, samples, timestamps):
         for (s, t) in zip(samples, timestamps):
             s = int(s) if not math.isnan(s) else NaN
-            (sunrise, sunset) = get_sunrise_sunset(t.month, t.day)
+            (sunrise, sunset) = get_sunrise_sunset(t.year, t.month, t.day)
             current_zone = time_of_day_to_zone(dt_to_minutes(t), sunrise,
                                                sunset)
             if self.length is None:
@@ -170,7 +170,7 @@ class ScanState:
 
     def add_sample(self, s, t):
         s = int(s) if not math.isnan(s) else NaN
-        (sunrise, sunset) = get_sunrise_sunset(t.month, t.day)
+        (sunrise, sunset) = get_sunrise_sunset(t.year, t.month, t.day)
         current_zone = time_of_day_to_zone(dt_to_minutes(t), sunrise,
                                            sunset)
         if self.state==None:
@@ -381,7 +381,7 @@ class LightPredictionTrainer:
         
     def features_for_prediction(self, s, dt, length, sample_queue, scaled=True):
         minutes = dt_to_minutes(dt)
-        (sunrise, sunset) = get_sunrise_sunset(dt.month, dt.day)
+        (sunrise, sunset) = get_sunrise_sunset(dt.year, dt.month, dt.day)
         zone = time_of_day_to_zone(minutes, sunrise, sunset)
         length_bucket = int(round(length/BACKCHECK_LENGTH))+1
         hist_value = sample_queue[0] if len(sample_queue)>0 else s
@@ -454,7 +454,7 @@ class LightPredictorLengthOnly:
         return length
     
     def predict(self, dt):
-        (sunrise, sunset) = get_sunrise_sunset(dt.month, dt.day)
+        (sunrise, sunset) = get_sunrise_sunset(dt.year, dt.month, dt.day)
         new_zone = time_of_day_to_zone(dt_to_minutes(dt), sunrise, sunset)
         if self.current_zone==None:
             self.current_zone = new_zone

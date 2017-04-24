@@ -4,10 +4,10 @@ Lighting Replay Application
 
 This directory contains an end-to-end application which monitors the
 light levels in several rooms of a residence and then replays a similar
-pattern when it is unoccupied. This demonstrates the use of AntEvents
+pattern when it is unoccupied. This demonstrates the use of ThingFlow
 in a more complex scenario.
 
-The file `baypiggies-iot-talk-oct-2016.pdf <https://github.com/mpi-sws-rse/antevents-examples/blob/master/lighting_replay_app/baypiggies-iot-talk-oct-2016.pdf>`__
+The file `baypiggies-iot-talk-oct-2016.pdf <https://github.com/mpi-sws-rse/thingflow-examples/blob/master/lighting_replay_app/baypiggies-iot-talk-oct-2016.pdf>`__
 contains the slides for a talk
 describing this application: *Python and IoT: From Chips and Bits to
 Data Science*. The talk was given at the Bay Area
