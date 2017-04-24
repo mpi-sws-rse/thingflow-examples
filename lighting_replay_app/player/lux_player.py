@@ -26,7 +26,7 @@ def predict_hmm_by_zone(hmm_by_zone, dt_series):
     last_zone = None
     last_cnt = None
     for dt in dt_series:
-        (sunrise, sunset) = get_sunrise_sunset(dt.month, dt.day)
+        (sunrise, sunset) = get_sunrise_sunset(dt.year, dt.month, dt.day)
         zone = time_of_day_to_zone(dt_to_minutes(dt), sunrise, sunset)
         if zone != last_zone:
             if last_cnt is not None:

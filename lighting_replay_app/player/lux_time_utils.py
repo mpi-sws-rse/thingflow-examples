@@ -8,11 +8,10 @@ import astral # use pip install to get this
 # Sunrise sunset data for Sunnyvale, CA
 # TODO: change this to call some kind of service to find my current location
 
-LOCATION = astral.Location(('Sunnyvale', 'USA', 37.3643427, -122.0080058, 'US/Pacific'),)
-YEAR = 2017
+SUNNYVALE = astral.Location(('Sunnyvale', 'USA', 37.3643427, -122.0080058, 'US/Pacific'),)
 
-def get_sunrise_sunset(month, day):
-    s = LOCATION.sun(datetime.date(YEAR, month, day))
+def get_sunrise_sunset(year, month, day, location=SUNNYVALE):
+    s = location.sun(datetime.date(year, month, day))
     def dt_to_mins(dt):
         return dt.hour*60+dt.minute
     return (dt_to_mins(s['sunrise']), dt_to_mins(s['sunset']))
