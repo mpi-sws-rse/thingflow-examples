@@ -2,10 +2,10 @@ import asyncio
 import datetime
 from collections import namedtuple
 
-from antevents.base import Scheduler
-import antevents.linq
-from antevents.linq.transducer import Transducer
-from antevents.adapters.csv import CsvReader, EventSpreadsheetMapping
+from thingflow.base import Scheduler
+import thingflow.filters
+from thingflow.filters.transducer import Transducer
+from thingflow.adapters.csv import CsvReader, EventSpreadsheetMapping
 
 TrafficEvent = namedtuple('TrafficEvent', ['ts', 'status', 'avgMeasuredTime', 'avgSpeed', 'extID', 'medianMeasuredTime', 'vehicleCount', 'id', 'report_id'])
 
@@ -110,8 +110,8 @@ def main():
     csvstream = CsvReader('trafficData158324.csv', mapper=traffic_event_mapper)
     traffic_congestion = csvstream.transduce(Sanitizer(drop_bad=False, threshold=50)).transduce(TrafficJamChecker(thresholdSpeed, thresholdVehicleCount,threshold=3))
 
-    traffic_congestion.subscribe(print)
-    traffic_congestion.reduce((lambda acc, x: acc+1) , seed=0).subscribe(print)
+    traffic_congestion.connect(print)
+    traffic_congestion.reduce((lambda acc, x: acc+1) , seed=0).connect(print)
 
     scheduler = Scheduler(asyncio.get_event_loop())
     scheduler.schedule_recurring(csvstream)

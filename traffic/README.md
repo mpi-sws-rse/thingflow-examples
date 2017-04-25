@@ -3,7 +3,7 @@ A collection of datasets of vehicle traffic, observed between two points for a s
 
 The original data was downloaded on 07.06.2016 from http://iot.ee.surrey.ac.uk:8080/datasets.html#traffic
 
-The example sets up an AntEvents pipeline to read the data, compute sliding means, etc.
+The example sets up an ThingFlow pipeline to read the data, compute sliding means, etc.
 
 Here are some analyses carried out by the original European project:
 
