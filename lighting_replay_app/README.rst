@@ -1,5 +1,5 @@
 ===========================
-Lighting Replay Application
+Smart Lighting Application
 ===========================
 
 This directory contains an end-to-end application which monitors the
